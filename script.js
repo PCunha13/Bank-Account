@@ -1,5 +1,5 @@
 "use strict";
-const transactionUl = document.querySelector("#transactions"); //ref da ul
+const transactionUl = document.querySelector("#transactions");
 const inscomeDisplay = document.querySelector("#money-plus");
 const expenseDisplay = document.querySelector("#money-minus");
 const balanceDisplay = document.querySelector("#balance");
@@ -7,70 +7,97 @@ const form = document.querySelector("#form");
 const inputTransactionName = document.querySelector("#text");
 const inputTransactionAmount = document.querySelector("#amount");
 
-const dummyTransactions = [
-  { id: 1, name: "Cake", amount: -20 },
-  { id: 2, name: "Salary", amount: 300 },
-  { id: 3, name: "Coffee", amount: -10 },
-  { id: 4, name: "Sunglasses", amount: 150 },
-];
+const localStorageTransactions = JSON.parse(
+  localStorage.getItem("transactions")
+);
 
-//Arrow Function transaction recebe array de objectos representa transação
-const addTransactionIntoDom = (transaction) => {
-  const operator = transaction.amount < 0 ? "-" : "+";
-  const cssClass = transaction.amount < 0 ? "minus" : "plus"; //vou criar uma nova classEL HTML
-  const amountWithoutOperator = Math.abs(transaction.amount);
-  const li = document.createElement("li"); //estou criar novo elemento HTML
+let transactions =
+  localStorage.getItem("transactions") !== null ? localStorageTransactions : [];
 
-  li.classList.add(cssClass); //<li class="plus"> ou minus!!
-  li.innerHTML = `${transaction.name}<span>${operator} ${amountWithoutOperator} €</span><button class="delete-btn">x</button>`;
-  transactionUl.append(li); //meter li como last child de ul
+const removeTransaction = (ID) => {
+  transactions = transactions.filter((transaction) => transaction.id !== ID);
+  updateLocalStorage();
+  init();
 };
 
-const updateBalanceValues = () => {
-  const transactionsAmounts = dummyTransactions.map(
-    (transaction) => transaction.amount
-  );
-  const total = transactionsAmounts
-    .reduce((acc, trans) => acc + trans, 0)
-    .toFixed(2);
-  balanceDisplay.textContent = `${total} €`;
-  const income = transactionsAmounts
-    .filter((value) => value > 0)
-    .reduce((acc, value) => acc + value, 0)
-    .toFixed(2);
-  inscomeDisplay.textContent = `${income} €`;
+const addTransactionIntoDom = ({ amount, name, id }) => {
+  const operator = amount < 0 ? "-" : "+";
+  const cssClass = amount < 0 ? "minus" : "plus";
+  const amountWithoutOperator = Math.abs(amount);
+  const li = document.createElement("li");
 
-  const expense = Math.abs(
+  li.classList.add(cssClass);
+  li.innerHTML = `${name}
+  <span>${operator} ${amountWithoutOperator} €</span>
+  <button class="delete-btn" onClick="removeTransaction(${id})">x</button>`;
+  transactionUl.append(li);
+};
+const getExpenses = (transactionsAmounts) =>
+  Math.abs(
     transactionsAmounts
       .filter((value) => value < 0)
       .reduce((acc, value) => acc + value, 0)
   ).toFixed(2);
+
+const getIncome = (transactionsAmounts) =>
+  transactionsAmounts
+    .filter((value) => value > 0)
+    .reduce((acc, value) => acc + value, 0)
+    .toFixed(2);
+
+const getTotal = (transactionsAmounts) =>
+  transactionsAmounts.reduce((acc, trans) => acc + trans, 0).toFixed(2);
+
+const updateBalanceValues = () => {
+  const transactionsAmounts = transactions.map(({ amount }) => amount);
+  const total = getTotal(transactionsAmounts);
+  const income = getIncome(transactionsAmounts);
+  const expense = getExpenses(transactionsAmounts);
+
+  balanceDisplay.textContent = `${total} €`;
+  inscomeDisplay.textContent = `${income} €`;
   expenseDisplay.textContent = `${expense} €`;
 };
 
-//vai adicionar transações no DOM
 const init = () => {
-  dummyTransactions.forEach(addTransactionIntoDom);
+  transactionUl.innerHTML = "";
+  transactions.forEach(addTransactionIntoDom);
   updateBalanceValues();
 };
 init();
 
-const generateID = () => Math.round(Math.random() * 1000); // entre  0 e 1000
+const updateLocalStorage = () => {
+  localStorage.setItem("transactions", JSON.stringify(transactions));
+};
 
-form.addEventListener("submit", (event) => {
+const generateID = () => Math.round(Math.random() * 1000);
+
+const addToTransactionsArray = (transactionName, transactionAmount) => {
+  transactions.push({
+    id: generateID(),
+    name: transactionName,
+    amount: +transactionAmount,
+  });
+};
+
+const cleanInputs = () => {
+  inputTransactionName.value = inputTransactionAmount.value = "";
+};
+
+const handlerFormSubmit = (event) => {
   event.preventDefault();
-  const transctionName = inputTransactionName.value.trim();
+  const transactionName = inputTransactionName.value.trim();
   const transactionAmount = inputTransactionAmount.value.trim();
+  const isSomeInputEmpty = transactionName === "" || transactionAmount === "";
 
-  if (transctionName === "" || transactionAmount === "") {
-    //certificar q campos sao preenchidos
+  if (isSomeInputEmpty) {
     alert("Please complete all required fields ");
     return;
   }
-  const transaction = {
-    id: generateID(),
-    name: transctionName,
-    amount: transactionAmount,
-  };
-  console.log(transaction);
-});
+
+  addToTransactionsArray(transactionName, transactionAmount);
+  init();
+  updateLocalStorage();
+  cleanInputs();
+};
+form.addEventListener("submit", handlerFormSubmit);
