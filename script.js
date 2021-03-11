@@ -1,5 +1,11 @@
 "use strict";
 const transactionUl = document.querySelector("#transactions"); //ref da ul
+const inscomeDisplay = document.querySelector("#money-plus");
+const expenseDisplay = document.querySelector("#money-minus");
+const balanceDisplay = document.querySelector("#balance");
+const form = document.querySelector("#form");
+const inputTransactionName = document.querySelector("#text");
+const inputTransactionAmount = document.querySelector("#amount");
 
 const dummyTransactions = [
   { id: 1, name: "Cake", amount: -20 },
@@ -21,10 +27,25 @@ const addTransactionIntoDom = (transaction) => {
 };
 
 const updateBalanceValues = () => {
-  const transactionsAmounts = dummyTransactions
-    .map((transaction) => transaction.amount)
-    .reduce((acc, curr) => acc + curr);
-  console.log(transactionsAmounts);
+  const transactionsAmounts = dummyTransactions.map(
+    (transaction) => transaction.amount
+  );
+  const total = transactionsAmounts
+    .reduce((acc, trans) => acc + trans, 0)
+    .toFixed(2);
+  balanceDisplay.textContent = `${total} €`;
+  const income = transactionsAmounts
+    .filter((value) => value > 0)
+    .reduce((acc, value) => acc + value, 0)
+    .toFixed(2);
+  inscomeDisplay.textContent = `${income} €`;
+
+  const expense = Math.abs(
+    transactionsAmounts
+      .filter((value) => value < 0)
+      .reduce((acc, value) => acc + value, 0)
+  ).toFixed(2);
+  expenseDisplay.textContent = `${expense} €`;
 };
 
 //vai adicionar transações no DOM
@@ -33,3 +54,23 @@ const init = () => {
   updateBalanceValues();
 };
 init();
+
+const generateID = () => Math.round(Math.random() * 1000); // entre  0 e 1000
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const transctionName = inputTransactionName.value.trim();
+  const transactionAmount = inputTransactionAmount.value.trim();
+
+  if (transctionName === "" || transactionAmount === "") {
+    //certificar q campos sao preenchidos
+    alert("Please complete all required fields ");
+    return;
+  }
+  const transaction = {
+    id: generateID(),
+    name: transctionName,
+    amount: transactionAmount,
+  };
+  console.log(transaction);
+});
